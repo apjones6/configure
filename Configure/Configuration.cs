@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using YamlDotNet.Core;
@@ -37,58 +38,48 @@ actions:
 
 		public ConfigureNode[] Nodes { get; }
 
-		public static Configuration Load()
+		public static bool TryLoad(out Configuration configuration)
 		{
 			if (!File.Exists(CONFIGURATION_FILE))
 			{
-				return null;
+				File.WriteAllText(CONFIGURATION_FILE, DEFAULT_YAML);
+				var path = Path.GetFullPath(CONFIGURATION_FILE);
+				Console.WriteLine($"Created {path}");
+
+				configuration = null;
+				return false;
 			}
 			
 			var deserializer = new DeserializerBuilder()
 				.WithNamingConvention(new CamelCaseNamingConvention())
 				.IgnoreUnmatchedProperties()
 				.Build();
-			
-			using (var stream = File.OpenText(CONFIGURATION_FILE))
-			{
-				var nodes = new List<ConfigureNode>();
-				var parser = new Parser(stream);
-				parser.Expect<StreamStart>();
-				while (parser.Accept<DocumentStart>())
-				{
-					nodes.Add(deserializer.Deserialize<ConfigureNode>(parser));
-				}
 
-				return new Configuration(nodes);
+			try
+			{
+				using (var stream = File.OpenText(CONFIGURATION_FILE))
+				{
+					var nodes = new List<ConfigureNode>();
+					var parser = new Parser(stream);
+					parser.Expect<StreamStart>();
+					while (parser.Accept<DocumentStart>())
+					{
+						nodes.Add(deserializer.Deserialize<ConfigureNode>(parser));
+					}
+
+					configuration = new Configuration(nodes);
+					return true;
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.ForegroundColor = ConsoleColor.Red;
+				Console.WriteLine(ex);
+				Console.ResetColor();
+
+				configuration = null;
+				return false;
 			}
 		}
-
-		public static string WriteDefault()
-		{
-			File.WriteAllText(CONFIGURATION_FILE, DEFAULT_YAML);
-			return Path.GetFullPath(CONFIGURATION_FILE);
-		}
-	}
-
-	public class ConfigureNode
-	{
-		public ConfigureAction[] Actions { get; set; }
-		public string[] Match { get; set; }
-		public string Name { get; set; }
-	}
-
-	public class ConfigureAction
-	{
-		public ConfigureActionType Action { get; set; }
-		public string AppSetting { get; set; }
-		public string Path { get; set; }
-		public string Value { get; set; }
-	}
-
-	public enum ConfigureActionType
-	{
-		Update,
-		Create,
-		Remove
 	}
 }
