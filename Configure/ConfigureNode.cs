@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.XPath;
 
@@ -14,45 +12,44 @@ namespace Configure
 		public string[] Match { get; set; }
 		public string Name { get; set; }
 
-		public IEnumerable<string> ListFiles()
+		public string[] ListFiles()
 		{
-			// TODO: Find common base paths of match strings, so we don't enumerate the same root multiple times,
+			// Find common base paths of match strings, so we don't enumerate the same root multiple times,
 			// and we don't enumerate a child path unnecessarily
-
-			var paths = new List<string>();
-			foreach (var pattern in Match)
+			var matchers = Match.Select(x => new PathMatcher(x)).ToList();
+			for (var i = 0; i < matchers.Count; i++)
 			{
-				// If the pattern has no asterisks, it's either a single file, or a folder to enumerate all files at any depth
-				// Otherwise find the simple base path then filter paths by RegEx
-				var index = pattern.IndexOf('*');
-				if (index == -1)
+				var match = matchers[i];
+				for (var j = i + 1; j < matchers.Count; j++)
 				{
-					if (Directory.Exists(pattern))
+					// If [j] was merged into [i], remove [j] and fix index as list items shift
+					if (match.Merge(matchers[j]))
 					{
-						paths.AddRange(Directory.EnumerateFiles(pattern, "*.*", SearchOption.AllDirectories).Select(x => x.Replace('\\', '/')));
+						matchers.RemoveAt(j);
+						j--;
 					}
-					else if (File.Exists(pattern))
-					{
-						paths.Add(pattern.Replace('\\', '/'));
-					}
-
-					// TODO: Else error
-				}
-				else
-				{
-					var pathLength = pattern.LastIndexOf('/', index);
-					var path = pattern.Substring(0, pathLength);
-					if (Directory.Exists(path))
-					{
-						var regex = PatternToRegex(pattern);
-						paths.AddRange(Directory.EnumerateFiles(path, "*.*", SearchOption.AllDirectories).Select(x => x.Replace('\\', '/')).Where(x => regex.IsMatch(x)));
-					}
-
-					// TODO: Else error
 				}
 			}
 
-			return paths
+			// Log invalid paths
+			foreach (var matcher in matchers.Where(x => !x.IsFile && !x.IsFolder))
+			{
+				Log.Error($"Path \"{matcher.Path}\" not found.");
+			}
+
+			// Enumerate the folders, applying the regexes to filter results, and join
+			// with any explicit file paths
+			return matchers
+				.Where(x => x.IsFolder)
+				.AsParallel()
+				.SelectMany(x => Directory
+					.EnumerateFiles(x.Path, "*.*", SearchOption.AllDirectories)
+					.Select(p => p.Replace('\\', '/'))
+					.Where(x.IsMatch))
+				.ToArray()
+				.Union(matchers
+					.Where(x => x.IsFile)
+					.Select(x => x.Path))
 				.OrderBy(x => x)
 				.Distinct()
 				.ToArray();
@@ -121,14 +118,6 @@ namespace Configure
 			}
 
 			return changed;
-		}
-		
-		// Courtesy of Stack overflow https://stackoverflow.com/a/19655824/527243
-		// and modified to support /**/ and /*/
-		private static Regex PatternToRegex(string pattern)
-		{
-			var mask = "^" + Regex.Escape(pattern).Replace("\\*\\*/", "([^/]+/)*").Replace("\\*", "[^/]+").Replace("\\?", ".") + "$";
-			return new Regex(mask, RegexOptions.IgnoreCase);
 		}
 	}
 }
