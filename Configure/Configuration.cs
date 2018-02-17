@@ -38,16 +38,14 @@ actions:
 
 		public ConfigureNode[] Nodes { get; }
 
-		public static bool TryLoad(out Configuration configuration)
+		public static Configuration Load()
 		{
 			if (!File.Exists(CONFIGURATION_FILE))
 			{
 				File.WriteAllText(CONFIGURATION_FILE, DEFAULT_YAML);
 				var path = Path.GetFullPath(CONFIGURATION_FILE);
-				Console.WriteLine($"Created {path}");
-
-				configuration = null;
-				return false;
+				Log.Info($"Created {path}");
+				return null;
 			}
 			
 			var deserializer = new DeserializerBuilder()
@@ -66,19 +64,14 @@ actions:
 					{
 						nodes.Add(deserializer.Deserialize<ConfigureNode>(parser));
 					}
-
-					configuration = new Configuration(nodes);
-					return true;
+					
+					return new Configuration(nodes);
 				}
 			}
 			catch (Exception ex)
 			{
-				Console.ForegroundColor = ConsoleColor.Red;
-				Console.WriteLine(ex);
-				Console.ResetColor();
-
-				configuration = null;
-				return false;
+				Log.Error(ex);
+				return null;
 			}
 		}
 	}

@@ -1,7 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.XPath;
 
 namespace Configure
 {
@@ -55,6 +58,71 @@ namespace Configure
 				.ToArray();
 		}
 
+		public XmlDocument LoadDocument(string path)
+		{
+			try
+			{
+				using (var stream = File.OpenText(path))
+				{
+					var document = new XmlDocument { PreserveWhitespace = true };
+					document.Load(stream);
+					return document;
+				}
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex);
+				return null;
+			}
+		}
+
+		public void SaveDocument(XmlDocument document, string path)
+		{
+			try
+			{
+				document.Save(path);
+				Log.Info($"Saved {path}");
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex);
+			}
+		}
+
+		public bool ApplyActions(XmlDocument document)
+		{
+			var navigator = document.CreateNavigator();
+			var changed = false;
+			foreach (var action in Actions)
+			{
+				foreach (XPathNavigator node in navigator.Select(action.XPath))
+				{
+					switch (action.Action)
+					{
+						case ConfigureActionType.Update:
+							if (node.Value != action.Value)
+							{
+								node.SetValue(action.Value);
+								changed = true;
+							}
+
+							break;
+
+						case ConfigureActionType.Remove:
+							node.DeleteSelf();
+							changed = true;
+							break;
+
+						default:
+							Log.Info($"Action \"{action.Action}\" is not supported.");
+							break;
+					}
+				}
+			}
+
+			return changed;
+		}
+		
 		// Courtesy of Stack overflow https://stackoverflow.com/a/19655824/527243
 		// and modified to support /**/ and /*/
 		private static Regex PatternToRegex(string pattern)

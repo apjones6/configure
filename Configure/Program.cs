@@ -1,31 +1,35 @@
-﻿using System;
-
-namespace Configure
+﻿namespace Configure
 {
 	class Program
-    {
-        static void Main(string[] args)
-        {
-			if (Configuration.TryLoad(out Configuration configuration))
+	{
+		static void Main(string[] args)
+		{
+			var configuration = Configuration.Load();
+			if (configuration == null)
 			{
-				var i = 0;
-				foreach (var node in configuration.Nodes)
+				return;
+			}
+			
+			for (var i = 0; i < configuration.Nodes.Length; i++)
+			{
+				var node = configuration.Nodes[i];
+				Log.Info($"Node {node.Name ?? (i + 1).ToString()}...");
+
+				foreach (var path in node.ListFiles())
 				{
-					var name = node.Name ?? $"node {i}";
-					Console.WriteLine($"Processing {name}...");
-					
-					foreach (var path in node.ListFiles())
+					var document = node.LoadDocument(path);
+					if (document == null)
 					{
-						Console.WriteLine(path);
+						continue;
 					}
 
-					Console.WriteLine();
-					++i;
+					var changed = node.ApplyActions(document);
+					if (changed)
+					{
+						node.SaveDocument(document, path);
+					}
 				}
-
-				Console.WriteLine("Configure complete...");
-				Console.ReadKey();
 			}
-        }
+		}
 	}
 }

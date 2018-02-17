@@ -1,26 +1,14 @@
 ---
 name: Common Settings
 match:
-  - D:/Projects/CDSM/js-uploader/server
-  - D:/Projects/CDSM/thinqi-editor-storyboard/bower.json
-  - D:/Projects/C#/**/app.config
-  - D:/Projects/C#/**/*.exe.config
-  - D:/Projects/C#/**/web.config
+  - D:/Projects/C#/test.xml
 actions:
-  - path: //appSettings/add[@key='MyApplication.Homepage']/@value
-    value: http://www.aj.co.uk
-    action: create
-  - path: //appSettings/add[@key='MyApplication.SqlDatabase']
-    action: remove
   - path: //appSettings/add[@key='MyApplication.MongoDB']/@value
     value: http://localhost:27017
+  - path: //appSettings/add[@key='MyApplication.SqlDatabase']
+    action: remove
   - appSetting: MyApplication.AdminUsername
     value: RichTea
----
-name: Forwarder
-match:
-  - D:/Projects/CDSM/dotnet-forwarder/Cdsm.Forwarder.Web/web.config
-actions:
   - appSetting: owin:AppStartup
     value: Cdsm.IAM.WebUtility.Startup.Cookies
 ...
