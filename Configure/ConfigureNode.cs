@@ -8,7 +8,7 @@ using System.Xml.XPath;
 
 namespace Configure
 {
-	public class ConfigureNode
+	class ConfigureNode
 	{
 		public ConfigureAction[] Actions { get; set; }
 		public string[] Match { get; set; }
@@ -34,12 +34,14 @@ namespace Configure
 			}
 
 			// Log invalid paths
-			foreach (var matcher in matchers.Where(x => !x.IsFile && !x.IsFolder))
+			foreach (var matcher in matchers.Where(x => x.IsInvalid))
 			{
 				Log.Error($"Path \"{matcher.Path}\" not found.");
 			}
 
-			var iterators = matchers.Select(x => new AsyncIterator<string>(x.EnumerateFiles(), p => p.Replace('\\', '/'), p => x.IsMatch(p))).ToArray();
+			// Create an async iterator for each matcher enumeration, then process the first
+			// iterator to get its next value each time to interleves results
+			var iterators = matchers.Select(x => new AsyncIterator<string>(x.EnumerateFiles())).ToArray();
 			var tasks = iterators.Select(x => x.NextAsync()).ToList();
 			while (tasks.Any())
 			{
@@ -55,17 +57,6 @@ namespace Configure
 					tasks.RemoveAt(index);
 				}
 			}
-
-
-
-			// Enumerate the folders, applying the regexes to filter results, and join
-			// with any explicit file paths
-			//return matchers
-			//	//.AsParallel()
-			//	.SelectMany(x => x.EnumerateFiles()
-			//		.Select(p => p.Replace('\\', '/'))
-			//		.Where(x.IsMatch))
-			//	.Distinct();
 		}
 
 		public XmlDocument LoadDocument(string path)

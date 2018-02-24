@@ -9,6 +9,9 @@ namespace Configure
 	class PathMatcher
     {
 		private string[] extensionPatterns = new[] { "*.*" };
+		private bool isFile;
+		private bool isFolder;
+		private Regex[] regexes;
 
 		public PathMatcher(string pattern)
 		{
@@ -20,11 +23,11 @@ namespace Configure
 				Path = path;
 				if (Directory.Exists(path))
 				{
-					IsFolder = true;
+					isFolder = true;
 				}
 				else if (File.Exists(path))
 				{
-					IsFile = true;
+					isFile = true;
 				}
 			}
 			else
@@ -38,40 +41,39 @@ namespace Configure
 						extensionPatterns = new[] { last };
 					}
 
-					IsFolder = true;
-					Regexes = new[] { PatternToRegex(path) };
+					isFolder = true;
+					regexes = new[] { PatternToRegex(path) };
 				}
 			}
 		}
-
-		public bool IsFile { get; }
-
-		public bool IsFolder { get; }
+		
+		public bool IsInvalid
+		{
+			get { return !isFile && !isFolder; }
+		}
 
 		public string Path { get; private set; }
-
-		public Regex[] Regexes { get; private set; }
-
+		
 		private Regex[] RegexesInternal
 		{
 			get
 			{
-				if (Regexes == null)
+				if (regexes == null)
 				{
-					Regexes = new[] { new Regex($"^{Regex.Escape(Path)}/", RegexOptions.IgnoreCase) };
+					regexes = new[] { new Regex($"^{Regex.Escape(Path)}/", RegexOptions.IgnoreCase) };
 				}
 
-				return Regexes;
+				return regexes;
 			}
 		}
 
 		public IEnumerable<string> EnumerateFiles()
 		{
-			if (IsFile)
+			if (isFile)
 			{
 				yield return Path;
 			}
-			else if (!IsFolder)
+			else if (!isFolder)
 			{
 				yield break;
 			}
@@ -84,7 +86,9 @@ namespace Configure
 			}
 			else
 			{
-				var iterators = extensionPatterns.Select(x => new AsyncIterator<string>(Directory.EnumerateFiles(Path, x, SearchOption.AllDirectories))).ToArray();
+				// Create an async iterator for each directory enumeration, then process the first
+				// iterator to get its next value each time to interleves results
+				var iterators = extensionPatterns.Select(x => new AsyncIterator<string>(Directory.EnumerateFiles(Path, x, SearchOption.AllDirectories), p => p.Replace('\\', '/'), p => IsMatch(p))).ToArray();
 				var tasks = iterators.Select(x => x.NextAsync()).ToList();
 				while (tasks.Any())
 				{
@@ -103,15 +107,15 @@ namespace Configure
 			}
 		}
 
-		public bool IsMatch(string path)
+		private bool IsMatch(string path)
 		{
-			return Regexes == null || Regexes.Any(x => x.IsMatch(path));
+			return regexes == null || regexes.Any(x => x.IsMatch(path));
 		}
 
 		public bool Merge(PathMatcher matcher)
 		{
 			var merge = false;
-			if (IsFolder && matcher.IsFolder)
+			if (isFolder && matcher.isFolder)
 			{
 				if (Path.StartsWith(matcher.Path))
 				{
@@ -126,7 +130,7 @@ namespace Configure
 				if (merge)
 				{
 					extensionPatterns = extensionPatterns.Union(matcher.extensionPatterns).Distinct().ToArray();
-					Regexes = matcher.RegexesInternal.Union(RegexesInternal).ToArray();
+					regexes = matcher.RegexesInternal.Union(RegexesInternal).ToArray();
 				}
 			}
 

@@ -9,7 +9,7 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Configure
 {
-	public class Configuration
+	class Configuration
 	{
 		private const string CONFIGURATION_FILE = "configure.yaml";
 		private const string DEFAULT_YAML = @"---
