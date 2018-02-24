@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.XPath;
 
@@ -12,7 +14,7 @@ namespace Configure
 		public string[] Match { get; set; }
 		public string Name { get; set; }
 
-		public string[] ListFiles()
+		public IEnumerable<string> EnumerateFiles()
 		{
 			// Find common base paths of match strings, so we don't enumerate the same root multiple times,
 			// and we don't enumerate a child path unnecessarily
@@ -37,22 +39,33 @@ namespace Configure
 				Log.Error($"Path \"{matcher.Path}\" not found.");
 			}
 
+			var iterators = matchers.Select(x => new AsyncIterator<string>(x.EnumerateFiles(), p => p.Replace('\\', '/'), p => x.IsMatch(p))).ToArray();
+			var tasks = iterators.Select(x => x.NextAsync()).ToList();
+			while (tasks.Any())
+			{
+				var index = Task.WaitAny(tasks.ToArray());
+				var iterator = tasks[index].Result;
+				if (iterator.HasCurrent)
+				{
+					yield return iterator.Current;
+					tasks[index] = iterator.NextAsync();
+				}
+				else
+				{
+					tasks.RemoveAt(index);
+				}
+			}
+
+
+
 			// Enumerate the folders, applying the regexes to filter results, and join
 			// with any explicit file paths
-			return matchers
-				.Where(x => x.IsFolder)
-				.AsParallel()
-				.SelectMany(x => Directory
-					.EnumerateFiles(x.Path, "*.*", SearchOption.AllDirectories)
-					.Select(p => p.Replace('\\', '/'))
-					.Where(x.IsMatch))
-				.ToArray()
-				.Union(matchers
-					.Where(x => x.IsFile)
-					.Select(x => x.Path))
-				.OrderBy(x => x)
-				.Distinct()
-				.ToArray();
+			//return matchers
+			//	//.AsParallel()
+			//	.SelectMany(x => x.EnumerateFiles()
+			//		.Select(p => p.Replace('\\', '/'))
+			//		.Where(x.IsMatch))
+			//	.Distinct();
 		}
 
 		public XmlDocument LoadDocument(string path)

@@ -1,4 +1,7 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Configure
 {
@@ -11,31 +14,45 @@ namespace Configure
 			{
 				return;
 			}
-			
+
 			for (var i = 0; i < configuration.Nodes.Length; i++)
 			{
+				var clock = new Stopwatch();
+				clock.Start();
+
 				var node = configuration.Nodes[i];
-				Log.Info($"Node {node.Name ?? (i + 1).ToString()}...");
+				Log.Info($"NODE[{node.Name ?? (i + 1).ToString()}]");
+				
+				var tasks = new List<Task>();
+				foreach (var file in node.EnumerateFiles().Distinct())
+				{
+					tasks.Add(Task.Run(() => Execute(file, node)));
+				}
 
-				var files = node.ListFiles();
-				Log.Info($"Matched {files.Length} files");
+				Task.WaitAll(tasks.ToArray());
 
-				files.AsParallel().ForAll(x => Execute(x, node));
+				clock.Stop();
+				Log.Info($"Elapsed {clock.ElapsedMilliseconds}ms");
+				Log.Break();
+			}
+
+			if (args.Contains("--pause"))
+			{
+				System.Console.ReadKey();
 			}
 		}
-
-		static void Execute(string path, ConfigureNode node)
+		
+		static void Execute(string file, ConfigureNode node)
 		{
-			var document = node.LoadDocument(path);
-			if (document == null)
+			Log.Info($"  {file}");
+			var document = node.LoadDocument(file);
+			if (document != null)
 			{
-				return;
-			}
-
-			var changed = node.ApplyActions(document);
-			if (changed)
-			{
-				node.SaveDocument(document, path);
+				var changed = node.ApplyActions(document);
+				if (changed)
+				{
+					node.SaveDocument(document, file);
+				}
 			}
 		}
 	}
