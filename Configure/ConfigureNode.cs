@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Configure.Actions;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -96,28 +97,11 @@ namespace Configure
 			var changed = false;
 			foreach (var action in Actions)
 			{
-				foreach (XPathNavigator node in navigator.Select(action.XPath))
+				var a = action.GetAction();
+				if (a != null)
 				{
-					switch (action.Action)
-					{
-						case ConfigureActionType.Update:
-							if (node.Value != action.Value)
-							{
-								node.SetValue(action.Value);
-								changed = true;
-							}
-
-							break;
-
-						case ConfigureActionType.Remove:
-							node.DeleteSelf();
-							changed = true;
-							break;
-
-						default:
-							Log.Info($"Action \"{action.Action}\" is not supported.");
-							break;
-					}
+					a.Initialize(action, navigator);
+					changed |= a.Execute();
 				}
 			}
 
