@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,6 +13,8 @@ namespace Configure
 			var configuration = Configuration.Load();
 			if (configuration == null)
 			{
+				// TODO: When we have options configuration use pause: false|error|true
+				Console.ReadKey();
 				return;
 			}
 
@@ -38,20 +41,31 @@ namespace Configure
 
 			if (args.Contains("--pause"))
 			{
-				System.Console.ReadKey();
+				Console.ReadKey();
 			}
 		}
 		
 		static void Execute(string file, ConfigureNode node)
 		{
-			Log.Info($"  {file}");
 			var document = node.LoadDocument(file);
 			if (document != null)
 			{
 				var changed = node.ApplyActions(document);
 				if (changed)
 				{
-					node.SaveDocument(document, file);
+					try
+					{
+						document.Save(file);
+						Log.Info($"  {file}", ConsoleColor.Green);
+					}
+					catch (Exception ex)
+					{
+						Log.Error(ex);
+					}
+				}
+				else
+				{
+					Log.Info($"  {file}");
 				}
 			}
 		}

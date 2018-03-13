@@ -16,7 +16,15 @@ namespace Configure
 			{
 				if (path == null && AppSetting != null)
 				{
-					return $"/configuration/appSettings/add[@key='{AppSetting}']/@value";
+					// Update or create the value, but remove the entire element
+					if (Action != ConfigureActionType.Remove)
+					{
+						return $"/configuration/appSettings/add[@key='{AppSetting}']/@value";
+					}
+					else
+					{
+						return $"/configuration/appSettings/add[@key='{AppSetting}']";
+					}
 				}
 
 				return path;

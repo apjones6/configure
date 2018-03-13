@@ -24,9 +24,11 @@ namespace Configure
 			Console.ResetColor();
 		}
 
-		public static void Info(string message)
+		public static void Info(string message, ConsoleColor? color = null)
 		{
+			if (color != null) Console.ForegroundColor = color.Value;
 			Console.WriteLine(message);
+			if (color != null) Console.ResetColor();
 		}
     }
 }

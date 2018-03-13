@@ -1,11 +1,9 @@
-﻿using Configure.Actions;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
-using System.Xml.XPath;
 
 namespace Configure
 {
@@ -77,20 +75,7 @@ namespace Configure
 				return null;
 			}
 		}
-
-		public void SaveDocument(XmlDocument document, string path)
-		{
-			try
-			{
-				document.Save(path);
-				Log.Info($"Saved {path}");
-			}
-			catch (Exception ex)
-			{
-				Log.Error(ex);
-			}
-		}
-
+		
 		public bool ApplyActions(XmlDocument document)
 		{
 			var navigator = document.CreateNavigator();
