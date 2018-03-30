@@ -1,0 +1,10 @@
+# Specific
+Configure/configure.yaml
+build/
+
+# Visual Studio
+.vs/
+
+# C#
+bin/
+obj/
