@@ -13,12 +13,12 @@ namespace Configure
 			var configuration = Configuration.Load();
 			if (configuration == null)
 			{
-				// TODO: When we have options configuration use pause: false|error|true
+				// Always pause if we can't read configuration
 				Console.ReadKey();
 				return;
 			}
 
-			for (var i = 0; i < configuration.Nodes.Length; i++)
+			for (var i = 0; i < configuration.Nodes.Count; i++)
 			{
 				var clock = new Stopwatch();
 				clock.Start();
@@ -29,7 +29,7 @@ namespace Configure
 				var tasks = new List<Task>();
 				foreach (var file in node.EnumerateFiles().Distinct())
 				{
-					tasks.Add(Task.Run(() => Execute(file, node)));
+					tasks.Add(Task.Run(() => Execute(file, node, configuration)));
 				}
 
 				Task.WaitAll(tasks.ToArray());
@@ -39,13 +39,13 @@ namespace Configure
 				Log.Break();
 			}
 
-			if (args.Contains("--pause"))
+			if (configuration.Pause == PauseMode.True || (configuration.Pause == PauseMode.Error && Log.Errored))
 			{
 				Console.ReadKey();
 			}
 		}
 		
-		static void Execute(string file, ConfigureNode node)
+		static void Execute(string file, ConfigureNode node, Configuration configuration)
 		{
 			var document = node.LoadDocument(file);
 			if (document != null)
@@ -55,7 +55,12 @@ namespace Configure
 				{
 					try
 					{
-						document.Save(file);
+						// Don't save file in dry-run, but do *everything* else
+						if (!configuration.DryRun)
+						{
+							document.Save(file);
+						}
+
 						Log.Info($"  {file}", ConsoleColor.Green);
 					}
 					catch (Exception ex)

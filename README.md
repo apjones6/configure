@@ -6,10 +6,5 @@ are specific to each individual.
 
 ## Publish
 
-You can create a standalone EXE (windows x64) by following these steps:
-
- - Restore NuGet packages
- - Release build
- - Run publish/publish.bat
-
-This will produce configure.exe in the publish folder.
+You can create a standalone EXE (windows x64) by executing the publish.bat, which will produce
+build/configure.exe.

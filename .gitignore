@@ -1,6 +1,6 @@
 # Specific
 Configure/configure.yaml
-publish/configure.exe
+build/
 
 # Visual Studio
 .vs/

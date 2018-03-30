@@ -39,7 +39,7 @@ namespace Configure
 			}
 
 			// Create an async iterator for each matcher enumeration, then process the first
-			// iterator to get its next value each time to interleves results
+			// iterator to get its next value each time to interleve results
 			var iterators = matchers.Select(x => new AsyncIterator<string>(x.EnumerateFiles())).ToArray();
 			var tasks = iterators.Select(x => x.NextAsync()).ToList();
 			while (tasks.Any())

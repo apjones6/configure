@@ -7,9 +7,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Data\configure.yaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Data\configure.yaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.1" />
     <PackageReference Include="System.Xml.XmlDocument" Version="4.3.0" />
     <PackageReference Include="System.Xml.XPath" Version="4.3.0" />
-    <PackageReference Include="YamlDotNet" Version="4.3.0" />
+    <PackageReference Include="YamlDotNet" Version="4.3.1" />
   </ItemGroup>
 
 </Project>

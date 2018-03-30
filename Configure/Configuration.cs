@@ -1,7 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Reflection;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -11,61 +12,77 @@ namespace Configure
 {
 	class Configuration
 	{
-		private const string CONFIGURATION_FILE = "configure.yaml";
-		private const string DEFAULT_YAML = @"---
-match:
-  - C:/wip/websites/**/web.config
-  - C:/wip/nuget/**/app.config
-  - C:/wip/nuget/**/*.exe.config
-  - C:/wip/nuget/**/web.config
-actions:
-  - path: //appSettings/add[@key='MyApplication.Homepage']/@value
-    value: http://www.aj.co.uk
-    action: create
-  - path: //appSettings/add[@key='MyApplication.SqlDatabase']
-    action: remove
-  - path: //appSettings/add[@key='MyApplication.MongoDB']/@value
-    value: http://localhost:27017
-  - appSetting: MyApplication.AdminUsername
-    value: RichTea
-...
-";
+		private static readonly Deserializer DESERIALIZER = new DeserializerBuilder()
+			.WithNamingConvention(new CamelCaseNamingConvention())
+			.IgnoreUnmatchedProperties()
+			.Build();
 
-		private Configuration(IEnumerable<ConfigureNode> nodes)
+		private static readonly Serializer SERIALIZER = new SerializerBuilder()
+			.JsonCompatible()
+			.Build();
+		
+		private const string CONFIGURATION_FILE = "configure.yaml";
+
+		public Configuration()
 		{
-			Nodes = nodes.ToArray();
+			Nodes = new List<ConfigureNode>();
 		}
 
-		public ConfigureNode[] Nodes { get; }
+		public bool DryRun { get; private set; }
+
+		public List<ConfigureNode> Nodes { get; }
+
+		public PauseMode Pause { get; private set; }
 
 		public static Configuration Load()
 		{
 			if (!File.Exists(CONFIGURATION_FILE))
 			{
-				File.WriteAllText(CONFIGURATION_FILE, DEFAULT_YAML);
+				var assembly = Assembly.GetExecutingAssembly();
+				using (var inStream = assembly.GetManifestResourceStream("Configure.Data.configure.yaml"))
+				{
+					using (var outStream = File.OpenWrite(CONFIGURATION_FILE))
+					{
+						inStream.CopyTo(outStream);
+					}
+				}
+
 				var path = Path.GetFullPath(CONFIGURATION_FILE);
 				Log.Info($"Created {path}");
 				return null;
 			}
 			
-			var deserializer = new DeserializerBuilder()
-				.WithNamingConvention(new CamelCaseNamingConvention())
-				.IgnoreUnmatchedProperties()
-				.Build();
-
 			try
 			{
 				using (var stream = File.OpenText(CONFIGURATION_FILE))
 				{
-					var nodes = new List<ConfigureNode>();
+					var configuration = new Configuration();
 					var parser = new Parser(stream);
+
 					parser.Expect<StreamStart>();
+					var first = true;
 					while (parser.Accept<DocumentStart>())
 					{
-						nodes.Add(deserializer.Deserialize<ConfigureNode>(parser));
+						// Deserialize to JSON
+						var document = DESERIALIZER.Deserialize(parser);
+						var json = JObject.Parse(SERIALIZER.Serialize(document));
+
+						// If the first document doesn't have a "match" property it instead contains
+						// configuration options, so process it as a special case
+						if (first && !json.ContainsKey("match"))
+						{
+							configuration.DryRun = json["dry-run"] != null ? json.Value<bool>("dry-run") : false;
+							configuration.Pause = json["pause"] != null && Enum.TryParse(json["pause"].ToString(), true, out PauseMode pause) ? pause : PauseMode.False;
+						}
+						else
+						{
+							configuration.Nodes.Add(json.ToObject<ConfigureNode>());
+						}
+
+						first = false;
 					}
 					
-					return new Configuration(nodes);
+					return configuration;
 				}
 			}
 			catch (Exception ex)

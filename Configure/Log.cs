@@ -4,6 +4,8 @@ namespace Configure
 {
     static class Log
 	{
+		public static bool Errored { get; private set; }
+
 		public static void Break()
 		{
 			Console.WriteLine();
@@ -11,6 +13,7 @@ namespace Configure
 
 		public static void Error(Exception ex)
 		{
+			Errored = true;
 			Console.ForegroundColor = ConsoleColor.Red;
 			Console.WriteLine(ex.Message);
 			Console.WriteLine(ex.StackTrace);
@@ -19,6 +22,7 @@ namespace Configure
 
 		public static void Error(string message)
 		{
+			Errored = true;
 			Console.ForegroundColor = ConsoleColor.Red;
 			Console.WriteLine(message);
 			Console.ResetColor();
