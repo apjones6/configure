@@ -18,12 +18,12 @@ namespace Configure
 				return;
 			}
 
-			for (var i = 0; i < configuration.Nodes.Count; i++)
+			var i = 0;
+			foreach (var node in configuration.Nodes)
 			{
 				var clock = new Stopwatch();
 				clock.Start();
-
-				var node = configuration.Nodes[i];
+				
 				Log.Info($"NODE[{node.Name ?? (i + 1).ToString()}]");
 				
 				var tasks = new List<Task>();
@@ -37,6 +37,7 @@ namespace Configure
 				clock.Stop();
 				Log.Info($"Elapsed {clock.ElapsedMilliseconds}ms");
 				Log.Break();
+				++i;
 			}
 
 			if (configuration.Pause == PauseMode.True || (configuration.Pause == PauseMode.Error && Log.Errored))
