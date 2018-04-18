@@ -16,24 +16,27 @@ this file, a default one be created ready for you to edit. An example YAML file 
 
 ```yaml
 ---
-dry-run: yes
-pause: no
+dry-run: no
+pause: yes
+aliases:
+  1: &xml
+    - D:/Projects/C#/test.xml
 nodes:
-  - match:
-      - C:/wip/websites/**/web.config
-      - C:/wip/nuget/**/app.config
-      - C:/wip/nuget/**/*.exe.config
-      - C:/wip/nuget/**/web.config
+  - match: *xml
     actions:
-      - path: //appSettings/add[@key='MyApplication.Homepage']/@value
-        value: http://www.aj.co.uk
-        action: create
-      - path: //appSettings/add[@key='MyApplication.SqlDatabase']
-        action: remove
-      - path: //appSettings/add[@key='MyApplication.MongoDB']/@value
+      - appSetting: MyApplication.MongoDB
         value: http://localhost:27017
+      - appSetting: MyApplication.SqlDatabase
+        action: remove
       - appSetting: MyApplication.AdminUsername
         value: RichTea
+      - appSetting: owin:AppStartup
+        value: Cdsm.IAM.WebUtility.Startup.Cookies
+  - match: *xml
+    actions:
+      - appSetting: owin:cookies:timeout
+        action: create
+        value: 180
 ...
 ```
 
