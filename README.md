@@ -22,7 +22,8 @@ aliases:
   1: &xml
     - D:/Projects/C#/test.xml
 nodes:
-  - match: *xml
+  - name: Common
+    match: *xml
     actions:
       - appSetting: Aj.MongoDB
         value: http://localhost:27017
@@ -30,6 +31,8 @@ nodes:
         action: remove
       - appSetting: Aj.AdminUsername
         value: RichTea
+      - path: //system.webServer/rewrite/rules/@configSource
+        value: rewrite.config
       - appSetting: owin:AppStartup
         value: Aj.Cookies
   - match: *xml
