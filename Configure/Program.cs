@@ -18,13 +18,26 @@ namespace Configure
 				return;
 			}
 
+			// First command line argument filters nodes to run
+			string[] nodes = null;
+			if (args.Any() && !string.IsNullOrWhiteSpace(args[0]))
+			{
+				nodes = args[0].Split(',').Select(x => x.Trim()).ToArray();
+			}
+
 			var i = 0;
 			foreach (var node in configuration.Nodes)
 			{
+				++i;
+				var name = node.Name ?? i.ToString();
+
+				// Optionally skip node
+				if (nodes != null && !nodes.Contains(name)) continue;
+
 				var clock = new Stopwatch();
 				clock.Start();
 				
-				Log.Info($"NODE[{node.Name ?? (i + 1).ToString()}]");
+				Log.Info($"NODE[{name}]");
 				
 				var tasks = new List<Task>();
 				foreach (var file in node.EnumerateFiles().Distinct())
@@ -37,7 +50,6 @@ namespace Configure
 				clock.Stop();
 				Log.Info($"Elapsed {clock.ElapsedMilliseconds}ms");
 				Log.Break();
-				++i;
 			}
 
 			if (configuration.Pause == PauseMode.True || (configuration.Pause == PauseMode.Error && Log.Errored))

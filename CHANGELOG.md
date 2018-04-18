@@ -2,6 +2,8 @@
 
 ## major
 * Refactor YAML configuration to single document (enables anchors & aliases)
+* Add node filter command line argument
+* Update README
 * Remove Newtonsoft.Json dependency
 * Fix deserializion for anchors
 
