@@ -24,14 +24,14 @@ aliases:
 nodes:
   - match: *xml
     actions:
-      - appSetting: MyApplication.MongoDB
+      - appSetting: Aj.MongoDB
         value: http://localhost:27017
-      - appSetting: MyApplication.SqlDatabase
+      - appSetting: Aj.SqlDatabase
         action: remove
-      - appSetting: MyApplication.AdminUsername
+      - appSetting: Aj.AdminUsername
         value: RichTea
       - appSetting: owin:AppStartup
-        value: Cdsm.IAM.WebUtility.Startup.Cookies
+        value: Aj.Cookies
   - match: *xml
     actions:
       - appSetting: owin:cookies:timeout
