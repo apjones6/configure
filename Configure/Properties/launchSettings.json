@@ -1,8 +1,7 @@
 {
   "profiles": {
     "Configure": {
-      "commandName": "Project",
-      "commandLineArgs": "--pause"
+      "commandName": "Project"
     }
   }
 }
