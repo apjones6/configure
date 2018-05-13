@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## major
+## 2.0.0 (May 13, 2018)
 * Refactor YAML configuration to single document (enables anchors & aliases)
 * Add node filter command line argument
 * Update README
