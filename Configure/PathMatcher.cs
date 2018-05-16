@@ -9,18 +9,21 @@ namespace Configure
 	class PathMatcher
     {
 		private string[] extensionPatterns = new[] { "*.*" };
-		private bool isFile;
+		private readonly bool isFile;
 		private bool isFolder;
 		private Regex[] regexes;
 
 		public PathMatcher(string pattern)
 		{
+			// If the path isn't rooted, make it relative to the current directory
+			if (!Path.IsPathRooted(pattern)) pattern = Path.Combine(Directory.GetCurrentDirectory(), pattern);
+			
 			var path = pattern.Replace('\\', '/').TrimEnd('/');
 
 			var index = path.IndexOf('*');
 			if (index == -1)
 			{
-				Path = path;
+				BasePath = path;
 				if (Directory.Exists(path))
 				{
 					isFolder = true;
@@ -32,8 +35,8 @@ namespace Configure
 			}
 			else
 			{
-				Path = path.Substring(0, path.LastIndexOf('/', index));
-				if (Directory.Exists(Path))
+				BasePath = path.Substring(0, path.LastIndexOf('/', index));
+				if (Directory.Exists(BasePath))
 				{
 					var last = path.Substring(path.LastIndexOf('/') + 1);
 					if (last.Contains('.'))
@@ -52,7 +55,7 @@ namespace Configure
 			get { return !isFile && !isFolder; }
 		}
 
-		public string Path { get; private set; }
+		public string BasePath { get; private set; }
 		
 		private Regex[] RegexesInternal
 		{
@@ -60,7 +63,7 @@ namespace Configure
 			{
 				if (regexes == null)
 				{
-					regexes = new[] { new Regex($"^{Regex.Escape(Path)}/", RegexOptions.IgnoreCase) };
+					regexes = new[] { new Regex($"^{Regex.Escape(BasePath)}/", RegexOptions.IgnoreCase) };
 				}
 
 				return regexes;
@@ -71,7 +74,7 @@ namespace Configure
 		{
 			if (isFile)
 			{
-				yield return Path;
+				yield return BasePath;
 			}
 			else if (!isFolder)
 			{
@@ -79,7 +82,7 @@ namespace Configure
 			}
 			else if (extensionPatterns.Contains("*.*"))
 			{
-				foreach (var path in Directory.EnumerateFiles(Path, "*.*", SearchOption.AllDirectories))
+				foreach (var path in Directory.EnumerateFiles(BasePath, "*.*", SearchOption.AllDirectories))
 				{
 					yield return path;
 				}
@@ -88,7 +91,7 @@ namespace Configure
 			{
 				// Create an async iterator for each directory enumeration, then process the first
 				// iterator to get its next value each time to interleves results
-				var iterators = extensionPatterns.Select(x => new AsyncIterator<string>(Directory.EnumerateFiles(Path, x, SearchOption.AllDirectories), p => p.Replace('\\', '/'), p => IsMatch(p))).ToArray();
+				var iterators = extensionPatterns.Select(x => new AsyncIterator<string>(Directory.EnumerateFiles(BasePath, x, SearchOption.AllDirectories), p => p.Replace('\\', '/'), p => IsMatch(p))).ToArray();
 				var tasks = iterators.Select(x => x.NextAsync()).ToList();
 				while (tasks.Any())
 				{
@@ -117,12 +120,12 @@ namespace Configure
 			var merge = false;
 			if (isFolder && matcher.isFolder)
 			{
-				if (Path.StartsWith(matcher.Path))
+				if (BasePath.StartsWith(matcher.BasePath))
 				{
-					Path = matcher.Path;
+					BasePath = matcher.BasePath;
 					merge = true;
 				}
-				else if (matcher.Path.StartsWith(Path))
+				else if (matcher.BasePath.StartsWith(BasePath))
 				{
 					merge = true;
 				}

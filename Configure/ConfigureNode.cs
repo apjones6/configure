@@ -35,7 +35,7 @@ namespace Configure
 			// Log invalid paths
 			foreach (var matcher in matchers.Where(x => x.IsInvalid))
 			{
-				Log.Error($"Path \"{matcher.Path}\" not found.");
+				Log.Error($"Path \"{matcher.BasePath}\" not found.");
 			}
 
 			// Create an async iterator for each matcher enumeration, then process the first

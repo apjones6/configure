@@ -16,20 +16,22 @@ namespace Configure
 			{
 				if (path == null && AppSetting != null)
 				{
-					// Update or create the value, but remove the entire element
-					if (Action != ConfigureActionType.Remove)
+					// Create/update the value attribute
+					var p = $"/configuration/appSettings/add[@key='{AppSetting}']";
+					if (Action == ConfigureActionType.Create || Action == ConfigureActionType.Update)
 					{
-						return $"/configuration/appSettings/add[@key='{AppSetting}']/@value";
+						p += "/@value";
 					}
-					else
-					{
-						return $"/configuration/appSettings/add[@key='{AppSetting}']";
-					}
+
+					return p;
 				}
 
 				return path;
 			}
-			set { path = value; }
+			set
+			{
+				path = value;
+			}
 		}
 
 		public string Value { get; set; }
@@ -60,8 +62,9 @@ namespace Configure
 
 	public enum ConfigureActionType
 	{
-		Update,
+		Comment,
 		Create,
-		Remove
+		Remove,
+		Update
 	}
 }

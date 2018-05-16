@@ -1,4 +1,5 @@
-﻿using System.Xml.XPath;
+﻿using System.Linq;
+using System.Xml.XPath;
 
 namespace Configure.Actions
 {
@@ -7,7 +8,8 @@ namespace Configure.Actions
 		public override bool Execute()
 		{
 			var changed = false;
-			foreach (XPathNavigator node in Navigator.Select(Action.XPath))
+			var nodes = Navigator.Select(Action.XPath).Cast<XPathNavigator>().ToArray();
+			foreach (var node in nodes)
 			{
 				node.DeleteSelf();
 				changed = true;
