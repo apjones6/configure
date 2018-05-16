@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## minor
+## 2.1.0 (May 16, 2018)
 * Add comment action
 * Add support for relative match patterns (resolve from executing directory)
 * Fix remove action only removing first match
