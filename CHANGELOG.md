@@ -2,6 +2,7 @@
 
 ## minor
 * Add comment action
+* Add support for relative match patterns (resolve from executing directory)
 * Fix remove action only removing first match
 
 ## 2.0.0 (May 13, 2018)
