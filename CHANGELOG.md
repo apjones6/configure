@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## patch
+## 2.1.1 (Jun 18, 2018)
 * Fix action not defaulted to update
 * Add EXE metadata
 
