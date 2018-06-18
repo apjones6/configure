@@ -4,6 +4,8 @@
     <OutputType>Exe</OutputType>
     <TargetFrameworks>netcoreapp2.0;net46</TargetFrameworks>
     <AssemblyName>configure</AssemblyName>
+    <Copyright>Copyright © $([System.DateTime]::Now.ToString(`yyyy`)) Alastair Jones</Copyright>
+    <Version>2.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

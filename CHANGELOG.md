@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## patch
+* Fix action not defaulted to update
+* Add EXE metadata
+
 ## 2.1.0 (May 16, 2018)
 * Add comment action
 * Add support for relative match patterns (resolve from executing directory)
