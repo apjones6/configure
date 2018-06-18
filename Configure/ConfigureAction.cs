@@ -62,9 +62,9 @@ namespace Configure
 
 	public enum ConfigureActionType
 	{
+		Update = 0,
 		Comment,
 		Create,
-		Remove,
-		Update
+		Remove
 	}
 }
